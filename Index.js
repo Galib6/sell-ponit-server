@@ -77,6 +77,8 @@ async function run() {
             const result = await productsCollection.find(query).toArray()
             res.send(result)
         })
+
+
         app.post("/addproduct", verifyJWT, async (req, res) => {
             const product = req.body;
             // console.log(product);
