@@ -1,0 +1,17 @@
+[
+    {
+        "id": "01",
+        "name": "Suv",
+        "img": "https://www.kia.com/content/dam/kwcms/gt/en/images/discover-kia/voice-search/parts-80-1.jpg"
+    },
+    {
+        "id": "02",
+        "name": "Sports Car",
+        "img": "https://www.kia.com/content/dam/kwcms/gt/en/images/discover-kia/voice-search/parts-80-6.jpg"
+    },
+    {
+        "id": "03",
+        "name": "Electric Car",
+        "img": "https://media-cldnry.s-nbcnews.com/image/upload/rockcms/2022-05/220516-tesla-mn-1210-5e91e9.jpg"
+    }
+]
