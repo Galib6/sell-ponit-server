@@ -106,6 +106,8 @@ async function run() {
             const result = await usersCollection.insertOne(user);
             res.send(result);
         });
+
+
         app.get('/allsellers', async (req, res) => {
             const query = { type: "seller" };
             const sellers = await usersCollection.find(query).toArray();
