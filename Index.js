@@ -4,8 +4,8 @@ const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require("dotenv").config()
 const app = express();
-
-const stripe = require("stripe")('sk_test_51M7c2bCrl3dQ57EJMOlipKJpX43py1TqYR0wIuxSuUqrCNs5wm5ZZqbdfoC9Sg4pPnoRjyK555NERoxbngBBbRhS00TlyNUFoE');
+const jwt = require("jsonwebtoken");
+const stripe = require("stripe")(`${process.env.STRIPE_KEY}`);
 
 // middle ware
 app.use(cors());
@@ -16,6 +16,27 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 // console.log(uri)
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+function verifyJWT(req, res, next) {
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send('unauthorized access');
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'forbidden access' })
+        }
+        req.decoded = decoded;
+        next();
+    })
+
+}
+
+
+
 async function run() {
     try {
         const categoryCollection = client.db('Car-sell-point').collection('category');
@@ -25,6 +46,13 @@ async function run() {
         const advertisedCollection = client.db('Car-sell-point').collection('advertised');
         const reportedToAdmin = client.db('Car-sell-point').collection('reportedtoadmin');
         const paymentsCollection = client.db('Car-sell-point').collection('paymentsCollection');
+
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '20h' })
+            res.send({ token })
+        })
+
 
         app.get('/category', async (req, res) => {
             const query = {}
@@ -46,7 +74,7 @@ async function run() {
             res.send(result)
         })
 
-        app.post("/addproduct", async (req, res) => {
+        app.post("/addproduct", verifyJWT, async (req, res) => {
             const product = req.body;
             // console.log(product);
             const result = await productsCollection.insertOne(product);
@@ -94,7 +122,7 @@ async function run() {
             res.send(result);
         })
 
-        app.post('/bookings', async (req, res) => {
+        app.post('/bookings', verifyJWT, async (req, res) => {
             const user = req.body;
             console.log(user);
             const result = await bookingsCollection.insertOne(user);
@@ -116,7 +144,7 @@ async function run() {
             res.send(result);
         });
 
-        app.post('/advertise', async (req, res) => {
+        app.post('/advertise', verifyJWT, async (req, res) => {
             const product = req.body;
             // console.log(product);
             const result = await advertisedCollection.insertOne(product);
@@ -195,18 +223,39 @@ async function run() {
 
 
         // temporary toupdate feild on appointment options
-        // app.get('/aaa', async (req, res) => {
-        //     const filter = {}
-        //     const options = { upsert: true }
-        //     const updatedDoc = {
-        //         $set: {
-        //             advertise: false,
-        //             bookingType: "Book Now"
-        //         }
-        //     }
-        //     const result = await productsCollection.updateMany(filter, updatedDoc, options);
-        //     res.send(result);
-        // })
+        app.get('/aaa', async (req, res) => {
+            const filter = {}
+            const options = { upsert: true }
+            const updatedDoc = {
+                $set: {
+                    advertise: false,
+                    bookingType: "Book Now"
+                }
+            }
+            const result = await productsCollection.updateMany(filter, updatedDoc, options);
+            res.send(result);
+        })
+
+        app.get('/varified', async (req, res) => {
+            const filter = { email: req.query.email }
+            console.log(filter)
+            const options = { upsert: true }
+            const updatedDoc = {
+                $set: {
+                    varified: true,
+                }
+            }
+            const result = await productsCollection.updateMany(filter, updatedDoc, options);
+            res.send(result);
+        })
+
+        app.post('/gsignup', async (req, res) => {
+            const product = req.body;
+            // console.log(product);
+            const result = await usersCollection.insertOne(product);
+            res.send(result);
+        });
+
 
 
         //payments 
@@ -243,6 +292,12 @@ async function run() {
             res.send(result);
         })
 
+        app.delete('/deleteproduct/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await productsCollection.deleteOne(filter);
+            res.send(result);
+        })
 
 
     }
